@@ -27,7 +27,7 @@ object SbtAspectj extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] = aspectjSettings
 
   def defaultAspectjSettings = Seq(
-    aspectjVersion := "1.8.10",
+    aspectjVersion := "1.9.22.1",
     aspectjDirectory := crossTarget.value / "aspectj",
     aspectjShowWeaveInfo := false,
     aspectjVerbose := false,
@@ -46,7 +46,7 @@ object SbtAspectj extends AutoPlugin {
       aspectjLintPropertiesFile.value,
       aspectjExtraOptions.value
     ),
-    aspectjSource := (sourceDirectory in Compile).value / "aspectj",
+    aspectjSource := (Compile / sourceDirectory).value / "aspectj",
     sourceDirectories := Seq(aspectjSource.value),
     aspectjCompiledClasses := compiledClassesTask.value,
     includeFilter := "*.aj",
@@ -68,7 +68,7 @@ object SbtAspectj extends AutoPlugin {
   def aspectjDependencySettings = Seq(
     ivyConfigurations += Aspectj,
     libraryDependencies ++= {
-      val version = (aspectjVersion in Aspectj).value
+      val version = ( Aspectj / aspectjVersion).value
       Seq(
         "org.aspectj" % "aspectjtools" % version % Aspectj,
         "org.aspectj" % "aspectjweaver" % version % Aspectj,
@@ -89,9 +89,9 @@ object SbtAspectj extends AutoPlugin {
     }
 
     def combineClasspaths = Def.task {
-      Attributed.blank((classDirectory in Compile).value) +:
-        (managedClasspath.value ++ (dependencyClasspath in Compile).value)
-    }.dependsOn(compile in Compile)
+      Attributed.blank((Compile / classDirectory).value) +:
+        (managedClasspath.value ++ (Compile / dependencyClasspath).value)
+    }.dependsOn(Compile / compile)
 
     def collectAspectSources = Def.task {
       sourceDirectories.value.descendantsExcept(includeFilter.value, excludeFilter.value).get
@@ -174,8 +174,8 @@ object SbtAspectj extends AutoPlugin {
 
     def copyResourcesTask = Def.task {
       val inputs = aspectjInputs.value
-      val compileClassDir = (classDirectory in Compile).value
-      val resourceMappings = (copyResources in Compile).value
+      val compileClassDir = (Compile / classDirectory).value
+      val resourceMappings = (Compile / copyResources).value
       val aspectjClassDir = classDirectory.value
       val taskStreams = streams.value
       SbtAspectjExtra.copyResources(inputs, compileClassDir, resourceMappings, aspectjClassDir, taskStreams)
@@ -227,13 +227,13 @@ object SbtAspectj extends AutoPlugin {
   // helper methods
 
   private def compiledClassesTask = Def.task {
-    (classDirectory in Compile).value
-  }.dependsOn(compile in Compile)
+    (Compile / classDirectory).value
+  }.dependsOn(Compile / compile)
 
   def aspectjUseInstrumentedClasses(config: Configuration) = Def.task {
-    val cp   = (fullClasspath in config).value
-    val ins  = (aspectjInputs in Aspectj).value
-    val outs = (aspectjWeave in Aspectj).value
+    val cp   = (config / fullClasspath).value
+    val ins  = (Aspectj / aspectjInputs).value
+    val outs = (Aspectj / aspectjWeave).value
 
     aspectjInsertInstrumentedClasses(cp, ins, outs)
   }

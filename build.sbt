@@ -1,22 +1,22 @@
-
-sbtPlugin := true
-
-organization := "com.lightbend.sbt"
-name := "sbt-aspectj"
-
-libraryDependencies += "org.aspectj" % "aspectjtools" % "1.8.10"
-
-publishMavenStyle := false
-
-bintrayOrganization := Some("sbt")
-bintrayRepository := "sbt-plugin-releases"
-bintrayPackage := name.value
-bintrayReleaseOnPublish := false
-
-scriptedDependencies := publishLocal.value
-scriptedLaunchOpts ++= Seq("-Xms512m", "-Xmx512m", s"-Dproject.version=${version.value}")
-
-crossSbtVersions := Vector("1.1.5", "0.13.17")
+lazy val root = (project in file("."))
+  .enablePlugins(SbtPlugin)
+  .settings(
+    Seq(
+      organization := "com.lightbend.sbt",
+      name := "sbt-aspectj",
+      scalacOptions ++= Seq("-unchecked", "-deprecation", "-target:jvm-1.8"),
+      scalaVersion := "2.12.19",
+      crossSbtVersions := Vector("1.10.1", "1.9.1"),
+      libraryDependencies ++= Seq(
+        "org.aspectj" % "aspectjtools" % "1.9.22.1"
+      ),
+      publishMavenStyle := false,
+      sbtPlugin := true,
+      scriptedBufferLog := false,
+      scriptedDependencies := publishLocal.value,
+      scriptedLaunchOpts ++= Seq("-Xmx1024M", "-Dplugin.version=" + version.value, s"-Dproject.version=${version.value}")
+    )
+  )
 
 import ReleaseTransformations._
 releaseProcess := Seq[ReleaseStep](
@@ -28,7 +28,6 @@ releaseProcess := Seq[ReleaseStep](
   commitReleaseVersion,
   tagRelease,
   releaseStepCommandAndRemaining("^ publish"),
-  releaseStepTask(bintrayRelease),
   setNextVersion,
   commitNextVersion,
   pushChanges

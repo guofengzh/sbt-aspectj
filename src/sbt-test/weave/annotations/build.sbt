@@ -1,26 +1,27 @@
 
 organization := "com.lightbend.sbt.aspectj"
 version := "0.1-SNAPSHOT"
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.19"
 
 enablePlugins(SbtAspectj)
 
 // add compiled classes as an input to aspectj
-aspectjInputs in Aspectj += (aspectjCompiledClasses in Aspectj).value
+Aspectj / aspectjInputs += (Aspectj / aspectjCompiledClasses).value
 
 // use the results of aspectj weaving
-products in Compile := (products in Aspectj).value
-products in Runtime := (products in Compile).value
+Compile / products := (Aspectj / products).value
+Runtime / products := (Compile / products).value
 
 // for sbt scripted test:
 TaskKey[Unit]("check") := {
   import scala.sys.process.Process
 
-  val cp = (fullClasspath in Compile).value
-  val mc = (mainClass in Compile).value
-  val opts = (javaOptions in run in Compile).value
+  val cp = (Compile / fullClasspath).value
+  val mc = (Compile / mainClass).value
+  val opts = (Compile / run / javaOptions).value
 
-  val expected = "Printing sample:\nhello\n"
+  val LF = System.lineSeparator()
+  val expected = "Printing sample:" + LF + "hello" + LF  
   val output = Process("java", opts ++ Seq("-classpath", cp.files.absString, mc getOrElse "")).!!
   if (output != expected) {
     println("Unexpected output:")

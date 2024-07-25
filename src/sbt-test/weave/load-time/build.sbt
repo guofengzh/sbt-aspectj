@@ -1,7 +1,7 @@
 lazy val buildSettings = Seq(
   organization := "com.lightbend.sbt.aspectj",
   version := "0.1-SNAPSHOT",
-  scalaVersion := "2.12.1"
+  scalaVersion := "2.12.19"
 )
 
 lazy val sample = (project in file("."))
@@ -16,10 +16,10 @@ lazy val tracer = (project in file("tracer"))
   .settings(buildSettings)
   .settings(
     // only compile the aspects (no weaving)
-    aspectjCompileOnly in Aspectj := true,
+    Aspectj / aspectjCompileOnly := true,
 
     // add the compiled aspects as products
-    products in Compile ++= (products in Aspectj).value
+    Compile / products ++= (Aspectj / products).value
   )
   .dependsOn(inputs)
 
@@ -28,21 +28,22 @@ lazy val woven = (project in file("woven"))
   .settings(buildSettings)
   .settings(
     // fork the run so that javaagent option can be added
-    fork in run := true,
+    run / fork := true,
 
     // add the aspectj weaver javaagent option
-    javaOptions in run ++= (aspectjWeaverOptions in Aspectj).value
+    run / javaOptions ++= (Aspectj / aspectjWeaverOptions).value
   ).dependsOn(inputs, tracer)
 
 // for sbt scripted test:
 TaskKey[Unit]("check") := {
   import scala.sys.process.Process
 
-  val cp = (fullClasspath in Compile in woven).value
-  val mc = (mainClass in Compile in woven).value
-  val opts = (javaOptions in run in Compile in woven).value
+  val cp = (woven / Compile / fullClasspath).value
+  val mc = (woven / Compile / mainClass).value
+  val opts = (woven / Compile / run / javaOptions).value
 
-  val expected = "Printing sample:\nhello\n"
+  val LF = System.lineSeparator()
+  val expected = "Printing sample:" + LF + "hello" + LF  
   val output = Process("java", opts ++ Seq("-classpath", cp.files.absString, mc getOrElse "")).!!
   if (output != expected) {
     println("Unexpected output:")

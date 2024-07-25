@@ -1,7 +1,7 @@
 lazy val buildSettings = Seq(
   organization := "com.lightbend.sbt.aspectj",
   version := "0.1-SNAPSHOT",
-  scalaVersion := "2.12.1"
+  scalaVersion := "2.12.19"
 )
 
 lazy val sample = (project in file("."))
@@ -14,13 +14,13 @@ lazy val tracer = (project in file("tracer"))
   .settings(buildSettings)
   .settings(
     // stop after compiling the aspects (no weaving)
-    aspectjCompileOnly in Aspectj := true,
+    Aspectj / aspectjCompileOnly := true,
 
     // ignore warnings (we don't have the sample classes)
-    aspectjLintProperties in Aspectj += "invalidAbsoluteTypeName = ignore",
+    Aspectj / aspectjLintProperties += "invalidAbsoluteTypeName = ignore",
 
     // replace regular products with compiled aspects
-    products in Compile := (products in Aspectj).value
+    Compile / products := (Aspectj / products).value
   )
 
 // test that the instrumentation works
@@ -29,23 +29,24 @@ lazy val instrumented = (project in file("instrumented"))
   .settings(buildSettings)
   .settings(
     // add the compiled aspects from tracer
-    aspectjBinaries in Aspectj ++= (products in Compile in tracer).value,
+    Aspectj / aspectjBinaries ++= (tracer / Compile / products).value,
 
     // weave this project's classes
-    aspectjInputs in Aspectj += (aspectjCompiledClasses in Aspectj).value,
-    products in Compile := (products in Aspectj).value,
-    products in Runtime := (products in Compile).value
+    Aspectj / aspectjInputs += (Aspectj / aspectjCompiledClasses).value,
+    Compile / products := (Aspectj / products).value,
+    Runtime / products := (Compile / products).value
   ).dependsOn(tracer)
 
 // for sbt scripted test:
 TaskKey[Unit]("check") := {
   import scala.sys.process.Process
 
-  val cp = (fullClasspath in Compile in instrumented).value
-  val mc = (mainClass in Compile in instrumented).value
-  val opts = (javaOptions in run in Compile in instrumented).value
+  val cp = (instrumented / Compile / fullClasspath).value
+  val mc = (instrumented / Compile / mainClass).value
+  val opts = (instrumented / Compile / run / javaOptions).value
 
-  val expected = "Printing sample:\nhello\n"
+  val LF = System.lineSeparator()
+  val expected = "Printing sample:" + LF + "hello" + LF  
   val output = Process("java", opts ++ Seq("-classpath", cp.files.absString, mc getOrElse "")).!!
   if (output != expected) {
     println("Unexpected output:")

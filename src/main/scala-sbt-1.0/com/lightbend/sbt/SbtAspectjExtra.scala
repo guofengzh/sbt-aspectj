@@ -14,7 +14,7 @@ object SbtAspectjExtra {
     val mapped = if (ajcInputs contains compileClassDir) {
       resourceMappings map (_._2) pair Path.rebase(compileClassDir, aspectjClassDir)
     } else Seq.empty
-    Sync(cacheStore)(mapped)
+    Sync.sync(cacheStore)(mapped)
     mapped
   }
 }
